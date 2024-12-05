@@ -10,7 +10,7 @@ require("dotenv").config();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const outhRouter = require('./router/outhregroute')
 const fileRouter = require('./router/fileuploadroute');
-
+const generateFiles = require('./router/filegenerateroute');
 app.use(cors());
 app.use(express.json());
 
@@ -22,6 +22,7 @@ connectdb();
 app.use('/uploads', express.static('uploads'));
 app.use('/api/auth',outhRouter);
 app.use('/api/files', fileRouter);
+app.use('/api/generatefiles',generateFiles);
 
 app.use((req,res,next)=> {
     next(createError(404, 'entered url not found'));

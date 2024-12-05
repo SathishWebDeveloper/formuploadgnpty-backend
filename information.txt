@@ -9,3 +9,13 @@ Based on the specific user we need to store the data means .
       });  attach the user id like this with the upload file 
       
     
+
+// Generate pdf or excel based on the user given data. 
+I have to work this on both frontend and backend creation 
+
+while generate time , ill send the data to the db to save and based on the response ill get the data in frontend and create a pdf or excel.
+
+show the existing data generated file means , I have to send the data to backend and get all the data based on the id ,
+and with that data ill generate the pdf or excel in backend and send it to the frontend , in frontend using blob to generate the file
+and download it.
+
