@@ -1,0 +1,11 @@
+Based on the specific user we need to store the data means . 
+ step 1 -  we need to create a schema and attached the user id from the register schema (how to get that user id means follow step 2)
+ step 2 - we need to verify the user means , we need to verify the token and get the user id based on the email or id (decoded from json token)
+ step 3 -  then we have upload the files using multer or aws and store the data in db. 
+                  const fileMetadata = new File({
+        userId: req.user._id,
+        filePath: req.file.path, // Local file path
+        fileName: req.file.originalname,
+      });  attach the user id like this with the upload file 
+      
+    
