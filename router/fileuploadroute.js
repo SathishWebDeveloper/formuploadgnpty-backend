@@ -68,7 +68,14 @@ const upload = multer({ storage });
 // Define the file upload route
 
 router.post("/upload",authenticateToken, upload.single("file"), uploadFileController.fileUploadList);
-router.get("/show",authenticateToken, uploadFileController.showUploadedFiles);
+
+router.get("/show",authenticateToken, uploadFileController.showUploadedFiles);  // this get all the files details and path and send the response to 
+// to the frontend. then frontend use the localhost and file path (uploads folder) download the required file using handledownload function 
+// for pdf or excel using specific package. 
+
+
+
+
 
 
 

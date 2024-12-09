@@ -21,7 +21,7 @@ const fileUploadList = async (req, res) => {
     try {
       console.log("req.user._id" , req.user._id)
       const files = await File.find({ userId: req.user._id });
-      console.log("find", files)
+      // console.log("find", files)
       res.status(200).json(files);
     } catch (error) {
       console.error('Error retrieving files:', error);
