@@ -19,3 +19,14 @@ show the existing data generated file means , I have to send the data to backend
 and with that data ill generate the pdf or excel in backend and send it to the frontend , in frontend using blob to generate the file
 and download it.
 
+// 
+need to work on read the pdf or excel data and convert into the html design like table and post it in a nodemailer with scheduling
+
+
+// google map 
+
+google cloud console - google outh login 
+Google cloud console create credientials -  google maps
+
+based on the logged in user id , Ill get all the locations based on that user details aand find latitude longitude with 3rd party api.
+and pass the data to the frontend

@@ -4,6 +4,9 @@ const createError = require("http-errors");
 const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
 
+const axios = require('axios');
+require("dotenv").config();
+
 function generateXLS(data) {
   console.log("Data");
 
@@ -80,9 +83,36 @@ function generateXLS(data) {
   }
 }
 
+// find the coordinates using api dynamically and get the data 
+const fetchData = async (location) => {
+    try {
+      const apiKey = process.env.GEOAPIFY; // Replace with your actual API key
+      const url = `https://api.geoapify.com/v1/geocode/search?text=${location}&format=json&apiKey=${apiKey}`;
+  
+      // Use axios to make the request
+      const response = await axios.get(url);
+  
+      // Extract the data from the response
+      const data = response.data;
+  
+    //   console.log("res location",data);
+      if(data?.results[0]){
+          return data?.results[0];
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error.message);
+      return null;
+    }
+  };
+
+
 const fileGenerateUserEnterData = async (req, res) => {
+
   // console.log("req", req.user._id , req.name , req.email)
   const { name, email, eventDetails, location, fileFormat } = req.body;
+
+  const {lon , lat } = await fetchData(location);
+
   try {
     const fileMetadata = new FileGenerate({
       userId: req.user._id,
@@ -91,6 +121,8 @@ const fileGenerateUserEnterData = async (req, res) => {
       eventDetails: eventDetails,
       location: location,
       format: fileFormat,
+      longitude : lon || "78.6870296",
+      latitude : lat || "10.804973"
     });
 
     console.log("test123");
@@ -211,8 +243,28 @@ const generateFileBackend = async (req, res, next) => {
   }
 };
 
+
+/// get the location list 
+const getAllLocationList = async(req,res) => {
+  
+  console.log("Request body:", req.body);
+
+  try{
+    console.log("req.user._id", req.user._id);
+    const files = await FileGenerate.find({ userId: req.user._id });
+    const modifyLocation = files?.map((item)=> ({ lat: item.latitude, lng: item.longitude, location: item.location }))
+    console.log("file-------------------", modifyLocation);
+    res.status(200).json({ message: "location fetched successfully" , data : modifyLocation });
+
+  }
+  catch(err){
+    console.log("error", err)
+  }
+
+}
 module.exports = {
   fileGenerateUserEnterData,
   getGenerateFileData,
   generateFileBackend,
+  getAllLocationList
 };

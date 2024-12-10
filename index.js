@@ -18,8 +18,9 @@ app.use(express.json());
 
 const connectdb = require('./db/db')
 connectdb();
-
+// directaccess to the static files for the using localhost downloads. 
 app.use('/uploads', express.static('uploads'));
+
 app.use('/api/auth',outhRouter);
 app.use('/api/files', fileRouter);
 app.use('/api/generatefiles',generateFiles);

@@ -7,15 +7,24 @@ router.post(
   "/upload",
   authVerifyAuthenticate,
   fileGenController.fileGenerateUserEnterData
-);   // in generate component
+); // in generate component
 
-router.get("/show",
-    authVerifyAuthenticate,
-    fileGenController.getGenerateFileData);  // it is just only show the data in the table from the generate files method
+router.get(
+  "/show",
+  authVerifyAuthenticate,
+  fileGenController.getGenerateFileData
+); // it is just only show the data in the table from the generate files method
 
+router.post(
+  "/downloadupload",
+  authVerifyAuthenticate,
+  fileGenController.generateFileBackend
+);
 
-    router.post("/downloadupload",
-      authVerifyAuthenticate,
-      fileGenController.generateFileBackend); 
+router.get(
+  "/locationlist",
+  authVerifyAuthenticate,
+  fileGenController.getAllLocationList
+);
 
 module.exports = router;

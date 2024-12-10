@@ -8,6 +8,8 @@ const NewFileSchema = new mongoose.Schema({
     location:{ type: String, required: true },
     format:{ type: String, required: true },
     uploadedAt: { type: Date, default: Date.now },
+    longitude:{type:Number , required : true},
+    latitude:{type:Number, required:true}
 })
 
 const FileGenerate = mongoose.model('NewFileGenerate' , NewFileSchema);
