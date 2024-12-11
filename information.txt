@@ -30,3 +30,8 @@ Google cloud console create credientials -  google maps
 
 based on the logged in user id , Ill get all the locations based on that user details aand find latitude longitude with 3rd party api.
 and pass the data to the frontend
+
+
+// send mail 
+based on the upload folder send mail make an path to send the file in nodemailer 
+another one same like create an pdf or excel in backend and generate an buffer to send the file in nodemailer 

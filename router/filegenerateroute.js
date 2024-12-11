@@ -20,6 +20,11 @@ router.post(
   authVerifyAuthenticate,
   fileGenController.generateFileBackend
 );
+router.post(
+  "/sendgeneratefilemail",
+  authVerifyAuthenticate,
+  fileGenController.sendGenerateFileBackendMail
+);
 
 router.get(
   "/locationlist",

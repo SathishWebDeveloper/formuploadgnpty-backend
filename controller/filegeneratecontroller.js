@@ -3,9 +3,13 @@ const createError = require("http-errors");
 // const puppeteer = require("puppeteer");
 const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
+const streamBuffers = require("stream-buffers");
 
-const axios = require('axios');
+const axios = require("axios");
 require("dotenv").config();
+const fs = require('fs');
+const path = require('path');
+const { sendmailWithTempFile } = require("../utility/emailwithtempfile");
 
 function generateXLS(data) {
   console.log("Data");
@@ -83,35 +87,33 @@ function generateXLS(data) {
   }
 }
 
-// find the coordinates using api dynamically and get the data 
+// find the coordinates using api dynamically and get the data
 const fetchData = async (location) => {
-    try {
-      const apiKey = process.env.GEOAPIFY; // Replace with your actual API key
-      const url = `https://api.geoapify.com/v1/geocode/search?text=${location}&format=json&apiKey=${apiKey}`;
-  
-      // Use axios to make the request
-      const response = await axios.get(url);
-  
-      // Extract the data from the response
-      const data = response.data;
-  
-    //   console.log("res location",data);
-      if(data?.results[0]){
-          return data?.results[0];
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error.message);
-      return null;
-    }
-  };
+  try {
+    const apiKey = process.env.GEOAPIFY; // Replace with your actual API key
+    const url = `https://api.geoapify.com/v1/geocode/search?text=${location}&format=json&apiKey=${apiKey}`;
 
+    // Use axios to make the request
+    const response = await axios.get(url);
+
+    // Extract the data from the response
+    const data = response.data;
+
+    //   console.log("res location",data);
+    if (data?.results[0]) {
+      return data?.results[0];
+    }
+  } catch (error) {
+    console.error("Error fetching data:", error.message);
+    return null;
+  }
+};
 
 const fileGenerateUserEnterData = async (req, res) => {
-
   // console.log("req", req.user._id , req.name , req.email)
   const { name, email, eventDetails, location, fileFormat } = req.body;
 
-  const {lon , lat } = await fetchData(location);
+  const { lon, lat } = await fetchData(location);
 
   try {
     const fileMetadata = new FileGenerate({
@@ -121,8 +123,8 @@ const fileGenerateUserEnterData = async (req, res) => {
       eventDetails: eventDetails,
       location: location,
       format: fileFormat,
-      longitude : lon || "78.6870296",
-      latitude : lat || "10.804973"
+      longitude: lon || "78.6870296",
+      latitude: lat || "10.804973",
     });
 
     console.log("test123");
@@ -149,13 +151,14 @@ const getGenerateFileData = async (req, res) => {
 };
 
 const generateFileBackend = async (req, res, next) => {
+
   const { _id } = req.body;
   console.log("Request body:", req.body);
 
   try {
     // Fetch file record from the database
     const fileRecord = await FileGenerate.findById(_id);
-    console.log("file-------------------", fileRecord);
+    // console.log("file-------------------", fileRecord);
 
     if (!fileRecord) {
       return next(createError(404, "Record not found"));
@@ -184,28 +187,15 @@ const generateFileBackend = async (req, res, next) => {
       doc
         .fontSize(14)
         .text(`Location: ${fileRecord.location}`, { align: "left" });
-
       // Add an image (adjust path and size as necessary)
-      // const imagePath = './path/to/your/image.jpg'; // Provide path to your image
-      // doc.image(imagePath, { width: 300, height: 200, align: 'center' });
+      const imagePath = "uploads/674ee84a245b3f29955ddaa2-1733317653572-Max-R_Headshot (1) - Copy.jpg"; // Provide path to your image
+      doc.image(imagePath, { width: 300, height: 200, align: "center" });
 
       // Finalize and send the PDF document
       return doc.end();
       //   res.status(200).json({ message: "File Created successfully" });
     } else if (fileRecord.format === "Excel") {
       console.log("testing =====================================>");
-      //   let tasks = [
-      //     { id: 1, name: "task1", status: "approved" },
-      //     { id: 2, name: "task2", status: "denied" },
-      //   ];
-      //   if (tasks.length > 0) {
-      //     const xlsBuffer = await generateXLS(tasks);
-      //     res.set("Content-Disposition", "attachment; sathish.xls");
-      //     res.type("application/vnd.ms-excel");
-      //     return res.send(xlsBuffer);
-
-      /////////////////////////////////////////////////////////////////////Method 2 to create a excel
-
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Sheet 1");
 
@@ -215,12 +205,17 @@ const generateFileBackend = async (req, res, next) => {
         { header: "Name", key: "name", width: 30 },
         { header: "Email", key: "email", width: 30 },
         { header: "EventDetails", key: "eventDetails", width: 30 },
-        { header: "location", key: "location", width: 30 }
+        { header: "location", key: "location", width: 30 },
       ];
 
-      worksheet.addRow({ id: 1, name: `${fileRecord.fileName}` , email : `${fileRecord.email}` ,  eventDetails : `${fileRecord.eventDetails}`
-         , location : `${fileRecord.location}`});
-    //   worksheet.addRow({ id: 2, name: "Jane Doe" });
+      worksheet.addRow({
+        id: 1,
+        name: `${fileRecord.fileName}`,
+        email: `${fileRecord.email}`,
+        eventDetails: `${fileRecord.eventDetails}`,
+        location: `${fileRecord.location}`,
+      });
+      //   worksheet.addRow({ id: 2, name: "Jane Doe" });
 
       // Set headers for file download
       res.setHeader(
@@ -244,27 +239,120 @@ const generateFileBackend = async (req, res, next) => {
 };
 
 
-/// get the location list 
-const getAllLocationList = async(req,res) => {
-  
+
+const sendGenerateFileBackendMail = async (req, res, next) => {
+  // const { _id, req.user.email } = req.body; // Add recipient email
+  const {fileId} = req.body; 
+  console.log("req", req.body);
+  console.log("req.user._id" , req.user._id , req.user.email)
+
+
+  try {
+    const fileRecord = await FileGenerate.findById(fileId);
+
+    if (!fileRecord) {
+      return next(createError(404, "Record not found"));
+    }
+
+    if (fileRecord.format === "PDF") {
+      // Create a new PDF document
+      const doc = new PDFDocument();
+      const bufferStream = new streamBuffers.WritableStreamBuffer();
+
+      doc.pipe(bufferStream);
+
+      // Add content to the PDF
+      doc.fontSize(18).text(`Name: ${fileRecord.fileName}`, { align: "left" });
+      doc.fontSize(16).text(`Email: ${fileRecord.email}`, { align: "left" });
+      doc
+        .fontSize(14)
+        .text(`Event Details: ${fileRecord.eventDetails}`, { align: "left" });
+      doc
+        .fontSize(14)
+        .text(`Location: ${fileRecord.location}`, { align: "left" });
+      doc.end();
+
+      // Wait for the PDF generation to finish
+      await new Promise((resolve) => bufferStream.on("finish", resolve));
+      const pdfBuffer = bufferStream.getContents();
+
+      await sendmailWithTempFile(
+        req.user.email,
+        pdfBuffer,
+        "user-data.pdf",
+        "application/pdf",
+        fileRecord.fileName
+      );
+    } else if (fileRecord.format === "Excel") {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet 1");
+
+      worksheet.columns = [
+        { header: "ID", key: "id", width: 10 },
+        { header: "Name", key: "name", width: 30 },
+        { header: "Email", key: "email", width: 30 },
+        { header: "EventDetails", key: "eventDetails", width: 30 },
+        { header: "Location", key: "location", width: 30 },
+      ];
+
+      worksheet.addRow({
+        id: 1,
+        name: `${fileRecord.fileName}`,
+        email: `${fileRecord.email}`,
+        eventDetails: `${fileRecord.eventDetails}`,
+        location: `${fileRecord.location}`,
+      });
+
+      const bufferStream = new streamBuffers.WritableStreamBuffer();
+
+      await workbook.xlsx.write(bufferStream);
+      const excelBuffer = bufferStream.getContents();
+      // await sendmailWithTempFile(req.user.email, excelFilePath, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",fileRecord.fileName);
+
+
+      await sendmailWithTempFile(
+        req.user.email,
+        excelBuffer,
+        "file.xlsx",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        fileRecord.fileName
+      );
+    } else {
+      return res.status(400).json({ message: "Unsupported file format" });
+    }
+
+    res.status(200).json({ message: "File generated and email sent successfully" });
+  } catch (err) {
+    console.error("Error:", err);
+    next(createError(500, "Internal Server Error"));
+  }
+};
+
+/// get the location list
+const getAllLocationList = async (req, res) => {
   console.log("Request body:", req.body);
 
-  try{
+  try {
     console.log("req.user._id", req.user._id);
     const files = await FileGenerate.find({ userId: req.user._id });
-    const modifyLocation = files?.map((item)=> ({ lat: item.latitude, lng: item.longitude, location: item.location }))
+    const modifyLocation = files?.map((item) => ({
+      lat: item.latitude,
+      lng: item.longitude,
+      location: item.location,
+    }));
     console.log("file-------------------", modifyLocation);
-    res.status(200).json({ message: "location fetched successfully" , data : modifyLocation });
-
+    res
+      .status(200)
+      .json({ message: "location fetched successfully", data: modifyLocation });
+  } catch (err) {
+    console.log("error", err);
   }
-  catch(err){
-    console.log("error", err)
-  }
+};
 
-}
 module.exports = {
   fileGenerateUserEnterData,
   getGenerateFileData,
   generateFileBackend,
-  getAllLocationList
+  sendGenerateFileBackendMail,
+  getAllLocationList,
 };

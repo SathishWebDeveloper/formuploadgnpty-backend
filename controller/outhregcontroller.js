@@ -7,6 +7,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 //auth token verify 
 const jwt = require('jsonwebtoken');
+const { sendLoginEmail } = require("../utility/emailservice");
 
 
 let refreshTokens = []; // Store valid refresh tokens
@@ -42,22 +43,17 @@ const createUserList = async (req, res, next) => {
   
       // Check if the user already exists in the database
       let user = await User.findOne({ googleId: sub });
-      if(user){
-        // return next(createError(409, `User ${email} is already registered`));
+      const accessToken =  generateAccessToken(email);
+      const refreshToken =  generateRefreshToken(email); 
 
-        const accessToken =  generateAccessToken(email);
-        const refreshToken =  generateRefreshToken(email);
       
-        res.cookie('refreshToken', refreshToken, {
-          httpOnly: true,
-          secure: false, // Set to true in production
-          sameSite: 'strict',
-        });
-
-        console.log("access", accessToken);
-        console.log("refresh", refreshToken);
-        return res.status(200).json({ message: 'User authenticated', user  , accessToken , refreshToken});
-      }
+      
+      
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: false, // Set to true in production
+        sameSite: 'strict',
+      });
 
       if (!user) {
         // Create a new user if not found
@@ -69,9 +65,17 @@ const createUserList = async (req, res, next) => {
         });
         await user.save();
       }
-  
-      // Respond with user data
-      res.status(200).json({ message: 'User authenticated', user });
+      
+
+        const emailSent = await sendLoginEmail(email, name);
+        if (emailSent) {
+          return res.status(200).json({ message: 'User authenticated', user  , accessToken , refreshToken});
+        } 
+        else {
+          return res.status(500).json({ message: "Login successful, but email failed to send" });
+        }
+
+
     } 
     catch (err) {
     next(createError(500, "Error not saving user data"));
